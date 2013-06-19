@@ -4,7 +4,7 @@ module Docsplit
   # nicely sized images.
   class ImageExtractor
 
-    MEMORY_ARGS     = "-limit memory 256MiB -limit map 512MiB"
+    MEMORY_ARGS     = "-limit memory 1024MiB -limit map 1024MiB"
     DEFAULT_FORMAT  = :png
     DEFAULT_DENSITY = '150'
 
