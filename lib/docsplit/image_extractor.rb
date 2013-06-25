@@ -6,7 +6,7 @@ module Docsplit
 
     MEMORY_ARGS     = "-limit memory 1024MiB -limit map 1024MiB"
     DEFAULT_FORMAT  = :png
-    DEFAULT_DENSITY = '150'
+    DEFAULT_DENSITY = '96'
 
     # Extract a list of PDFs as rasterized page images, according to the
     # configuration in options.
@@ -34,15 +34,15 @@ module Docsplit
       pages     = @pages || '1-' + Docsplit.extract_length(pdf).to_s
       escaped_pdf = ESCAPE[pdf]
       FileUtils.mkdir_p(directory) unless File.exists?(directory)
-      common    = "#{MEMORY_ARGS} -density #{@density} #{resize_arg(size)} #{quality_arg(format)}"
+      # common    = "#{MEMORY_ARGS} -density #{@density} #{resize_arg(size)} -quality 75"
       if previous
         FileUtils.cp(Dir[directory_for(previous) + '/*'], directory)
-        result = `MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=2 gm mogrify #{common} -unsharp 0x0.5+0.75 \"#{directory}/*.#{format}\" 2>&1`.chomp
+        result = `MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=2 gm mogrify -limit memory 1024MiB -limit map 1024MiB -density #{@density} #{resize_arg(size)} -quality 75 \"#{directory}/*.png\" 2>&1`.chomp
         raise ExtractionFailed, result if $? != 0
       else
         page_list(pages).each do |page|
-          out_file  = ESCAPE[File.join(directory, "#{basename}_#{page}.#{format}")]
-          cmd = "MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=2 gm convert +adjoin -define pdf:use-cropbox=true #{common} #{escaped_pdf}[#{page - 1}] #{out_file} 2>&1".chomp
+          out_file  = ESCAPE[File.join(directory, "#{basename}_#{page}.png")]
+          cmd = "MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=2 gm convert +adjoin -define pdf:use-cropbox=true -limit memory 1024MiB -limit map 1024MiB -density #{@density} #{resize_arg(size)} -quality 75 #{escaped_pdf}[#{page - 1}] #{out_file} 2>&1".chomp
           result = `#{cmd}`.chomp
           raise ExtractionFailed, result if $? != 0
         end
@@ -78,13 +78,13 @@ module Docsplit
     end
 
     # Generate the appropriate quality argument for the image format.
-    def quality_arg(format)
-      case format.to_s
-      when /jpe?g/ then "-quality 85"
-      when /png/   then "-quality 100"
-      else ""
-      end
-    end
+    #def quality_arg(format)
+    #  case format.to_s
+    #  when /jpe?g/ then "-quality 85"
+    #  when /png/   then "-quality 100"
+    #  else ""
+    #  end
+    #end
 
     # Generate the expanded list of requested page numbers.
     def page_list(pages)
