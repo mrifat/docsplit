@@ -1,12 +1,22 @@
 module Docsplit
 
+=begin
+This version of docsplit is modified to support our needs exactly as it fits our requirements.
+  In case of requirement changes you have to modify some of the "hard coded variables" to support the new requirements.
+  1. The MEMORY_ARGS constant is now hard coded, if you want to specify the memory limits that Graphicsmagick should use you have to:
+    a. Change the limit in the result and cmd variables or,
+    b. Let the user specify the memory limit by defining it as an instance variable in the extract_options method (not recommended).
+  2. The quality is now hard coded to be 75 for both jpg and png formats we found this to be optimal for the image quality and size specially for png images.
+  3. The density aka DPI is now hard coded to be 96 which fits best in our case if you want to modify it you have to do:
+    a. Change the density in the result and cmd variables or,
+    b. Let the user specify the density by defining it as an instance variable in the extract_options method which allow the user to pass it as a param.
+  4. compress_images method is used to compress png images only. 
+  5. For multithreading you can change the number of Cpus Graphicsmagick should use by modifing the OMP_NUM_THREADS
+=end
+
   # Delegates to GraphicsMagick in order to convert PDF documents into
   # nicely sized images.
   class ImageExtractor
-
-    MEMORY_ARGS     = "-limit memory 1024MiB -limit map 1024MiB"
-    DEFAULT_FORMAT  = :png
-    DEFAULT_DENSITY = '96'
 
     # Extract a list of PDFs as rasterized page images, according to the
     # configuration in options.
@@ -22,6 +32,10 @@ module Docsplit
       end
     end
 
+    def compress_images(directory)
+      `for file in #{directory}/**/*.png; do pngnq -f "$file" && rm -rf "${file%.png}" && mv "${file%.png}-nq8.png" "$file";done`
+    end
+
     # Convert a single PDF into page images at the specified size and format.
     # If `--rolling`, and we have a previous image at a larger size to work with,
     # we simply downsample that image, instead of re-rendering the entire PDF.
@@ -34,15 +48,14 @@ module Docsplit
       pages     = @pages || '1-' + Docsplit.extract_length(pdf).to_s
       escaped_pdf = ESCAPE[pdf]
       FileUtils.mkdir_p(directory) unless File.exists?(directory)
-      # common    = "#{MEMORY_ARGS} -density #{@density} #{resize_arg(size)} -quality 75"
       if previous
         FileUtils.cp(Dir[directory_for(previous) + '/*'], directory)
-        result = `MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=2 gm mogrify -limit memory 1024MiB -limit map 1024MiB -density #{@density} #{resize_arg(size)} -quality 75 \"#{directory}/*.png\" 2>&1`.chomp
+        result = `MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=4 gm mogrify -limit memory 1024MiB -limit map 512MiB -density 96 #{resize_arg(size)} -quality 75 \"#{directory}/*.#{format}\" 2>&1`.chomp
         raise ExtractionFailed, result if $? != 0
       else
         page_list(pages).each do |page|
-          out_file  = ESCAPE[File.join(directory, "#{basename}_#{page}.png")]
-          cmd = "MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=2 gm convert +adjoin -define pdf:use-cropbox=true -limit memory 1024MiB -limit map 1024MiB -density #{@density} #{resize_arg(size)} -quality 75 #{escaped_pdf}[#{page - 1}] #{out_file} 2>&1".chomp
+          out_file  = ESCAPE[File.join(directory, "#{basename}_#{page}.#{format}")]
+          cmd = "MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=4 gm convert +adjoin -define pdf:use-cropbox=true -limit memory 1024MiB -limit map 512MiB -density 96 #{resize_arg(size)} -quality 75 #{escaped_pdf}[#{page - 1}] #{out_file} 2>&1".chomp
           result = `#{cmd}`.chomp
           raise ExtractionFailed, result if $? != 0
         end
@@ -51,18 +64,15 @@ module Docsplit
       FileUtils.remove_entry_secure tempdir if File.exists?(tempdir)
     end
 
-
     private
 
     # Extract the relevant GraphicsMagick options from the options hash.
     def extract_options(options)
       @output  = options[:output]  || '.'
       @pages   = options[:pages]
-      @density = options[:density] || DEFAULT_DENSITY
       @formats = [options[:format] || DEFAULT_FORMAT].flatten
       @sizes   = [options[:size]].flatten.compact
       @sizes   = [nil] if @sizes.empty?
-      @rolling = !!options[:rolling]
     end
 
     # If there's only one size requested, generate the images directly into
@@ -76,15 +86,6 @@ module Docsplit
     def resize_arg(size)
       size.nil? ? '' : "-resize #{size}"
     end
-
-    # Generate the appropriate quality argument for the image format.
-    #def quality_arg(format)
-    #  case format.to_s
-    #  when /jpe?g/ then "-quality 85"
-    #  when /png/   then "-quality 100"
-    #  else ""
-    #  end
-    #end
 
     # Generate the expanded list of requested page numbers.
     def page_list(pages)
