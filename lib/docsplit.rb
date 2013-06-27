@@ -51,8 +51,13 @@ module Docsplit
     opts[:pages] = normalize_value(opts[:pages]) if opts[:pages]
     ImageExtractor.new.extract(pdfs, opts)
   end
+
   def self.compress_images(directory)
     ImageExtractor.new.compress_images(directory)
+  end
+
+  def self.compress_1024x_images(directory)
+    ImageExtractor.new.compress_1024x_images(directory)
   end
 
   # Use JODCConverter to extract the documents as PDFs.

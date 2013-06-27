@@ -35,7 +35,9 @@ This version of docsplit is modified to support our needs exactly as it fits our
     def compress_images(directory)
       `for file in #{directory}/**/*.png; do pngnq -f "$file" && rm -rf "${file%.png}" && mv "${file%.png}-nq8.png" "$file";done`
     end
-
+    def compress_1024x_images(directory)
+      `for file in #{directory}/*.png; do pngnq -f "$file" && rm -rf "${file%.png}" && mv "${file%.png}-nq8.png" "$file";done`
+    end
     # Convert a single PDF into page images at the specified size and format.
     # If `--rolling`, and we have a previous image at a larger size to work with,
     # we simply downsample that image, instead of re-rendering the entire PDF.
