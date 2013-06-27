@@ -78,7 +78,7 @@ This version of docsplit is modified to support our needs exactly as it fits our
     # If there's only one size requested, generate the images directly into
     # the output directory. Multiple sizes each get a directory of their own.
     def directory_for(size)
-      path = @sizes.length == 1 ? @output : File.join(@output, size)
+      path = File.join(@output, size)
       File.expand_path(path)
     end
 
