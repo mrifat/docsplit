@@ -8,8 +8,9 @@ module Docsplit
     def extract(pdfs, opts)
       extract_options opts
       [pdfs].flatten.each do |pdf|
-        pdf_name = File.basename(pdf, File.extname(pdf))
-        page_path = File.join(@output, "#{pdf_name}_%d.pdf")
+        # pdf_name = File.basename(pdf, File.extname(pdf))
+        # page_path = File.join(@output, "#{pdf_name}_%d.pdf")
+        page_path = File.join(@output, "%d.pdf")
         FileUtils.mkdir_p @output unless File.exists?(@output)
         
         cmd = if DEPENDENCIES[:pdftailor] # prefer pdftailor, but keep pdftk for backwards compatability

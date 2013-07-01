@@ -109,7 +109,8 @@ module Docsplit
     # Extract the contents of a single page of text, directly, adding it to
     # the `@pages_to_ocr` list if the text length is inadequate.
     def extract_page(pdf, page)
-      text_path = File.join(@output, "#{@pdf_name}_#{page}.txt")
+      # text_path = File.join(@output, "#{@pdf_name}_#{page}.txt")
+      text_path = File.join(@output, "#{page}.txt")
       run "pdftotext -enc UTF-8 -f #{page} -l #{page} #{ESCAPE[pdf]} #{ESCAPE[text_path]} 2>&1"
       unless @forbid_ocr
         @pages_to_ocr.push(page) if File.read(text_path).length < MIN_TEXT_PER_PAGE
