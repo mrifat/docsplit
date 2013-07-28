@@ -44,6 +44,7 @@ module Docsplit
           /Applications/OpenOffice.org.app/Contents
         )
       else # probably linux/unix
+        puts "searching for libreoffice"
         search_paths = %w(
           /usr/lib/libreoffice
           /opt/libreoffice
@@ -62,6 +63,7 @@ module Docsplit
       # raise an error if that path isn't valid, otherwise, add
       # it to the front of our search paths.
       if ENV['OFFICE_PATH']
+        puts "#{ENV['OFFICE_PATH']}"
         raise ArgumentError, "No such file or directory #{ENV['OFFICE_PATH']}" unless File.exists? ENV['OFFICE_PATH']
         paths.unshift(ENV['OFFICE_PATH'])
       end
@@ -110,6 +112,7 @@ module Docsplit
           `gm convert #{escaped_doc} #{escaped_out}/#{escaped_basename}.pdf`
         else
           if libre_office?
+            PUTS "#{ENV['SYSUSERCONFIG']='file://#{File.expand_path(escaped_out)}'}"
             # Set the LibreOffice user profile, so that parallel uses of cloudcrowd don't trip over each other.
             ENV['SYSUSERCONFIG']="file://#{File.expand_path(escaped_out)}"
             

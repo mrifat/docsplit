@@ -21,6 +21,7 @@ This version of docsplit is modified to support our needs exactly as it fits our
     # Extract a list of PDFs as rasterized page images, according to the
     # configuration in options.
     def extract(pdfs, options)
+      puts "Docsplit: In extract"
       @pdfs = [pdfs].flatten
       extract_options(options)
       @pdfs.each do |pdf|
@@ -33,6 +34,7 @@ This version of docsplit is modified to support our needs exactly as it fits our
     end
 
     def compress_images(directory)
+      puts "Docsplit: In compress"
       `for file in #{directory}/**/*.png; do pngnq -f "$file" && rm -rf "${file%.png}" && mv "${file%.png}-nq8.png" "$file";done`
     end
     def compress_1024x_images(directory)
@@ -44,6 +46,7 @@ This version of docsplit is modified to support our needs exactly as it fits our
     # Now we generate one page at a time, a counterintuitive opimization
     # suggested by the GraphicsMagick list, that seems to work quite well.
     def convert(pdf, size, format, previous=nil)
+      puts "Docsplit: In convert"
       tempdir   = Dir.mktmpdir
       #basename  = File.basename(pdf, File.extname(pdf))
       directory = directory_for(size)
@@ -51,10 +54,12 @@ This version of docsplit is modified to support our needs exactly as it fits our
       escaped_pdf = ESCAPE[pdf]
       FileUtils.mkdir_p(directory) unless File.exists?(directory)
       if previous
+      puts "Docsplit: In convert has previous"
         FileUtils.cp(Dir[directory_for(previous) + '/*'], directory)
         result = `MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=4 gm mogrify -limit memory 1024MiB -limit map 512MiB -density 96 #{resize_arg(size)} -quality 75 \"#{directory}/*.#{format}\" 2>&1`.chomp
         raise ExtractionFailed, result if $? != 0
       else
+      puts "Docsplit: In convert !has previous"
         page_list(pages).each do |page|
           out_file  = ESCAPE[File.join(directory, "#{page}.#{format}")]
           cmd = "MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=4 gm convert +adjoin -define pdf:use-cropbox=true -limit memory 1024MiB -limit map 512MiB -density 96 #{resize_arg(size)} -quality 75 #{escaped_pdf}[#{page - 1}] #{out_file} 2>&1".chomp
@@ -70,6 +75,7 @@ This version of docsplit is modified to support our needs exactly as it fits our
 
     # Extract the relevant GraphicsMagick options from the options hash.
     def extract_options(options)
+      puts "Docsplit: In extract_options"
       @output  = options[:output]  || '.'
       @pages   = options[:pages]
       @formats = [options[:format] || DEFAULT_FORMAT].flatten
@@ -80,17 +86,20 @@ This version of docsplit is modified to support our needs exactly as it fits our
     # If there's only one size requested, generate the images directly into
     # the output directory. Multiple sizes each get a directory of their own.
     def directory_for(size)
+      puts "Docsplit: In directory_for"
       path = File.join(@output, size)
       File.expand_path(path)
     end
 
     # Generate the resize argument.
     def resize_arg(size)
+      puts "in resize_arg"
       size.nil? ? '' : "-resize #{size}"
     end
 
     # Generate the expanded list of requested page numbers.
     def page_list(pages)
+      puts "in page_list"
       pages.split(',').map { |range|
         if range.include?('-')
           range = range.split('-')
