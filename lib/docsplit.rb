@@ -52,6 +52,10 @@ module Docsplit
     ImageExtractor.new.extract(pdfs, opts)
   end
 
+  def self.extract_text_pages(pdf, opts={})
+    TextExtractor.new.extract_text_pages(pdf, opts)
+  end
+
   def self.compress_images(directory)
     ImageExtractor.new.compress_images(directory)
   end

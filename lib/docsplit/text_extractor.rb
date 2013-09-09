@@ -43,6 +43,14 @@ module Docsplit
       end
     end
 
+    def extract_text_pages(pdf, opts)
+      if contains_text?(pdf)
+        extract_options opts
+        text_path = File.join(@output, "#{@from}-#{@to}.txt")
+        run "pdftotext -enc UTF-8 -f #{@from} -l #{@to} #{ESCAPE[pdf]} #{ESCAPE[text_path]} 2>&1"
+      end
+    end
+
     # Does a PDF have any text embedded?
     def contains_text?(pdf)
       fonts = `pdffonts #{ESCAPE[pdf]} 2>&1`
@@ -124,6 +132,8 @@ module Docsplit
       @forbid_ocr = options[:ocr] == false
       @clean_ocr  = !(options[:clean] == false)
       @language   = options[:language] || 'eng'
+      @from       = options[:from]
+      @to         = options[:to]
     end
 
   end
