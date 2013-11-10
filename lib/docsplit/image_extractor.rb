@@ -21,6 +21,7 @@ This version of docsplit is modified to support our needs exactly as it fits our
     # Extract a list of PDFs as rasterized page images, according to the
     # configuration in options.
     def extract(pdfs, options)
+      puts pdfs, options.inspect
       @pdfs = [pdfs].flatten
       extract_options(options)
       @pdfs.each do |pdf|
@@ -33,7 +34,7 @@ This version of docsplit is modified to support our needs exactly as it fits our
     end
 
     def compress_images(directory)
-      `for file in #{directory}/**/*.png; do pngnq -f "$file" && rm -rf "${file%.png}" && mv "${file%.png}-nq8.png" "$file";done`
+      `for file in #{directory}/*.png; do pngnq -f "$file" && rm -rf "${file%.png}" && mv "${file%.png}-nq8.png" "$file";done`
     end
     def compress_1024x_images(directory)
       `for file in #{directory}/*.png; do pngnq -f "$file" && rm -rf "${file%.png}" && mv "${file%.png}-nq8.png" "$file";done`
@@ -52,12 +53,12 @@ This version of docsplit is modified to support our needs exactly as it fits our
       FileUtils.mkdir_p(directory) unless File.exists?(directory)
       if previous
         FileUtils.cp(Dir[directory_for(previous) + '/*'], directory)
-        result = `MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=4 gm mogrify -limit memory 1024MiB -limit map 512MiB -density 96 #{resize_arg(size)} -quality 75 \"#{directory}/*.#{format}\" 2>&1`.chomp
+        result = `MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=4 gm mogrify -limit memory 1024MiB -limit map 512MiB -density #{@density} #{resize_arg(size)} -quality 100 \"#{directory}/*.#{format}\" 2>&1`.chomp
         raise ExtractionFailed, result if $? != 0
       else
         page_list(pages).each do |page|
           out_file  = ESCAPE[File.join(directory, "#{page}.#{format}")]
-          cmd = "MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=4 gm convert +adjoin -define pdf:use-cropbox=true -limit memory 1024MiB -limit map 512MiB -density 96 #{resize_arg(size)} -quality 75 #{escaped_pdf}[#{page - 1}] #{out_file} 2>&1".chomp
+          cmd = "MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=4 gm convert +adjoin -define pdf:use-cropbox=true -limit memory 1024MiB -limit map 512MiB -density #{@density} #{resize_arg(size)} -quality 100 #{escaped_pdf}[#{page - 1}] #{out_file} 2>&1".chomp
           result = `#{cmd}`.chomp
           raise ExtractionFailed, result if $? != 0
         end
@@ -72,6 +73,7 @@ This version of docsplit is modified to support our needs exactly as it fits our
     def extract_options(options)
       @output  = options[:output]  || '.'
       @pages   = options[:pages]
+      @density = options[:density]
       @formats = [options[:format] || DEFAULT_FORMAT].flatten
       @sizes   = [options[:size]].flatten.compact
       @sizes   = [nil] if @sizes.empty?
