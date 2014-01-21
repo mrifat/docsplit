@@ -17,7 +17,7 @@ module Docsplit
     NO_TEXT_DETECTED = /---------\n\Z/
 
     OCR_FLAGS   = '-density 400x400 -colorspace GRAY'
-    MEMORY_ARGS = '-limit memory 1024MiB -limit map 512MiB'
+    MEMORY_ARGS = '-limit memory 1536MiB -limit map 1024MiB'
 
     MIN_TEXT_PER_PAGE = 100 # in bytes
 
@@ -73,7 +73,7 @@ module Docsplit
           tiff = "#{tempdir}/#{@pdf_name}_#{page}.tif"
           escaped_tiff = ESCAPE[tiff]
           file = "#{base_path}_#{page}"
-          run "MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=4 gm convert -despeckle +adjoin #{MEMORY_ARGS} #{OCR_FLAGS} #{escaped_pdf}[#{page - 1}] #{escaped_tiff} 2>&1"
+          run "MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=7 gm convert -despeckle +adjoin #{MEMORY_ARGS} #{OCR_FLAGS} #{escaped_pdf}[#{page - 1}] #{escaped_tiff} 2>&1"
           run "tesseract #{escaped_tiff} #{ESCAPE[file]} -l #{@language} 2>&1"
           clean_text(file + '.txt') if @clean_ocr
           FileUtils.remove_entry_secure tiff
@@ -81,7 +81,7 @@ module Docsplit
       else
         tiff = "#{tempdir}/#{@pdf_name}.tif"
         escaped_tiff = ESCAPE[tiff]
-        run "MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=4 gm convert -despeckle #{MEMORY_ARGS} #{OCR_FLAGS} #{escaped_pdf} #{escaped_tiff} 2>&1"
+        run "MAGICK_TMPDIR=#{tempdir} OMP_NUM_THREADS=7 gm convert -despeckle #{MEMORY_ARGS} #{OCR_FLAGS} #{escaped_pdf} #{escaped_tiff} 2>&1"
         run "tesseract #{escaped_tiff} #{base_path} -l #{@language} 2>&1"
         clean_text(base_path + '.txt') if @clean_ocr
       end
